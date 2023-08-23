@@ -4,12 +4,18 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
 
+if torch.cuda.is_available() and torch.cuda.device_count():
+    DEVICE = 'cuda'
+else:
+    DEVICE = 'cpu'
+
+
 class ChatModel:
     max_tokens: int
     tokenizer: AutoTokenizer
     model: AutoModelForCausalLM
     min_reply_tokens: int = 256
-    device: str = 'cuda'
+    device: str = DEVICE
 
     inputs = None
     length = None
@@ -87,7 +93,8 @@ class StableBeluga7B(ChatModel):
     tokenizer = AutoTokenizer.from_pretrained('models/StableBeluga-7B')
     model = AutoModelForCausalLM.from_pretrained(
         'models/StableBeluga-7B',
-        torch_dtype=torch.float16,
+        torch_dtype=torch.float16 if DEVICE == 'cuda' else None,
         low_cpu_mem_usage=True,
-        device_map='cuda:0',
+        device_map='auto',
+        offload_folder="models/StableBeluga-7B/offload",
     )

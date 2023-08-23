@@ -7,14 +7,20 @@ A local AI chatbot with context search.
 ## Setup
 
 ```sh
-python -m venv .venv
-# Run OS specific venv acivate script
+# https://docs.python.org/3/library/venv.html#how-venvs-work
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-# Bootstrap model
-git clone https://huggingface.co/stabilityai/StableBeluga-7B models/StableBeluga-7B
-# Bootstrap source
+
+# Download the example model (requires git-lfs)
+git lfs install
+git lfs clone https://huggingface.co/stabilityai/StableBeluga-7B models/StableBeluga-7B
+
+# Index the example source
 python -m contexts.oracle.index
 ```
+
+Install `pytorch` via https://pytorch.org/get-started/locally/ for hardware acceleration.
 
 ## Running
 
