@@ -45,10 +45,10 @@ Logs are in `history/`.
 2. Subclass `ChatModel` in `oracle/models.py`.
 3. Import and use your `model` in `oracle/controller.py`.
 
-- `reply(message: str) -> Iterator[str]` - Stream a reply to the message.
-- `coach(motive: str)` - Set the system prompt.
-- `study(context: List[str])` - Include context in the prompt.
-- `mask(style: str)` - Mask the repsonse to the style.
+- `reply(message: str, **kwargs) -> Iterator[str]` - Stream a reply to the message.
+    - `motive: str` - Add a system prompt.
+    - `context: List[str]` - Add context to the prompt.
+    - `style: str` - Request a repsonse style.
 
 See `StableBeluga7B` in `oracle/models.py` for an example.
 
@@ -56,11 +56,12 @@ See `StableBeluga7B` in `oracle/models.py` for an example.
 
 Add a module in `contexts/` that defines:
 
-- `name: str` - The source name to show in the GUI.
-- `motive: str` - The system prompt that coaches the model on how to
-    use the context.
-- `find(str): -> List[str]` - A method for finding sources of context
-    for a given message.
+- `class Context`
+    - `name: str` - The source name to show in the GUI.
+    - `motive: str` - The default system prompt for caoching the model on
+        using the context.
+    - `find(message: str): -> Iterator[str]` - The method for finding sources of context
+        for a given message.
 
 See `contexts/oracle/` for an example.
 
@@ -69,11 +70,12 @@ See `contexts/oracle/` for an example.
 - `oracle.gradio.gui` uses Gradio to build a web client. The Blocks
     framework declares a component layout and event handlers. This
     renders server-side and streams updates over a websocket.
-- `oracle.engine` is an event loop for streaming status updates and
+- `oracle.session` is an event loop for streaming status updates and
     partial results. This is intentionally model and UI agnostic to
     allow customization with minimal API surface area. This handles
-    logging, error handling, and mostly importantly human-friendly
-    status events to explain long running model activities.
+    caching, session state, logging, error handling, and mostly
+    importantly generating human-friendly status events to explain
+    long running model activities.
 - `oracle.models` contains low level text generation models. The base
     class and example model lean heavily on `AutoTokenizer` and
     `AutoModelForCausalLM` from `transformers` to simplify loading

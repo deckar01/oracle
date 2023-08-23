@@ -1,57 +1,114 @@
 import gradio as gr
 
 from contexts import CONTEXTS
-from oracle.engine import chat
+from oracle.session import ChatSession
 from oracle.gradio.config import STYLES
 from oracle.gradio.utils import *
 
 
 with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
+    # Model
+
+    session_state = gr.State(ChatSession)
+
     # View
 
-    chatbot = gr.Chatbot(elem_id='chatbot', show_label=False)
+    chatbot_history = gr.Chatbot(elem_id='chatbot', show_label=False)
 
     with gr.Accordion('Settings', open=False, elem_id='settings'):
-        default_context = CONTEXTS['None']
-        motive = gr.Dropdown(
-            label='Motivation',
-            value=default_context.motive,
-            choices=[default_context.motive],
+
+        model_input = gr.Dropdown(
+            label='Chat Model',
             allow_custom_value=True,
         )
-        source = gr.Dropdown(
+        motive_input = gr.Dropdown(
+            label='Motivation',
+            allow_custom_value=True,
+        )
+        context_input = gr.Dropdown(
             label='Source',
-            choices=list(CONTEXTS.keys()),
-            value=default_context.name,
             allow_custom_value=False,
         )
-        style = gr.Dropdown(
+        style_input = gr.Dropdown(
             label='Response Style',
             choices=STYLES,
             allow_custom_value=True,
         )
 
     with gr.Row():
-        message = gr.Textbox(
+        message_input = gr.Textbox(
             placeholder='Message',
             lines=3,
             show_label=False,
             container=False,
             scale=1,
         )
-        send = gr.Button('Send', variant='primary', scale=0)
-        stop = gr.Button('Stop', variant='stop', visible=False, scale=0)
+        send_button = gr.Button('Send', variant='primary', scale=0)
+        stop_button = gr.Button('Stop', variant='stop', visible=False, scale=0)
 
     # Controller
 
-    def chat_handler(source, motive, style, message, chatbot):
+    demo.load(
+        guard(lambda session: gr.update(choices=session.models)),
+        inputs=[session_state],
+        outputs=model_input,
+    )
+    demo.load(
+        guard(lambda session: gr.update(choices=session.contexts)),
+        inputs=[session_state],
+        outputs=context_input,
+    )
+    demo.load(
+        guard(lambda session: session.models[-1]),
+        inputs=[session_state],
+        outputs=model_input,
+    )
+    demo.load(
+        guard(lambda session: session.contexts[-1]),
+        inputs=[session_state],
+        outputs=context_input,
+    )
+
+    model_input.change(
+        guard(lambda session, model: gr.update(
+            value=session.set_model(model),
+            choices=session.models,
+        )),
+        inputs=[session_state, model_input],
+        outputs=model_input,
+    )
+
+    context_input.change(
+        guard(lambda session, context: gr.update(
+            value=session.set_context(context),
+            choices=session.contexts,
+        )),
+        inputs=[session_state, context_input],
+        outputs=context_input,
+    )
+    context_input.change(
+        guard(lambda session: gr.update(
+            value=session.context.motive,
+            choices=[session.context.motive],
+        )),
+        inputs=session_state,
+        outputs=motive_input,
+    )
+
+    def chat_handler(chat, motive, style, message, chatbot):
         log = ''
         response = ''
         preview = [message, None]
         chatbot.append(preview)
-        yield locked(), chatbot, hide(), show()
+        progress = {
+            message_input: locked(),
+            chatbot_history: chatbot,
+            send_button: hide(),
+            stop_button: show(),
+        }
+        yield progress
 
-        for change in chat(message, motive, source, style):
+        for change in chat(message, motive, style):
             response = change.get('response', '')
             status = change.get('status', '')
             log = change.get('log', '')
@@ -59,32 +116,28 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             preview[1] = response
             if status: preview[1] += note(status)
             if log: preview[1] += fold(log)
-
-            yield locked(), chatbot, hide(), show()
+            yield progress
 
         preview[1] = response
         if log: preview[1] += fold(log)
         if not status: message = ''
+        progress[message_input] = unlocked(value=message)
+        progress[send_button] = show()
+        progress[stop_button] = hide()
+        yield progress
 
-        yield unlocked(value=message), chatbot, show(), hide()
-
-    chat_thread = send.click(
+    chat_thread = send_button.click(
         chat_handler,
-        inputs=[source, motive, style, message, chatbot],
-        outputs=[message, chatbot, send, stop],
+        inputs=[session_state, motive_input, style_input, message_input, chatbot_history],
+        outputs={message_input, chatbot_history, send_button, stop_button},
     )
 
-    stop.click(
-        lambda: (unlocked(), show(), hide()),
-        outputs=[message, send, stop],
+    stop_button.click(
+        lambda: {
+            message_input: unlocked(),
+            send_button: show(),
+            stop_button: hide(),
+        },
+        outputs={message_input, send_button, stop_button},
         cancels=[chat_thread],
-    )
-
-    source.change(
-        lambda source: gr.update(
-            value=CONTEXTS[source].motive,
-            choices=[CONTEXTS[source].motive],
-        ),
-        inputs=source,
-        outputs=motive,
     )

@@ -7,6 +7,13 @@ def locked(**kwargs):
 def unlocked(**kwargs):
     return gr.update(**kwargs, interactive=True)
 
+def guard(op):
+    def wrapper(*args, **kwargs):
+        yield locked()
+        yield op(*args, **kwargs)
+        yield unlocked()
+    return wrapper
+
 def show():
     return gr.update(visible=True)
 
