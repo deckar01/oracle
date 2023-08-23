@@ -1,8 +1,8 @@
 import gradio as gr
 
 from contexts import CONTEXTS
-from oracle.config import FORMATS
 from oracle.engine import chat
+from oracle.gradio.config import STYLES
 from oracle.gradio.utils import *
 
 

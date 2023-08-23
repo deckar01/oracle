@@ -1,4 +1,4 @@
-FORMATS = [
+STYLES = [
     '',
     'summary',
     'detailed',
