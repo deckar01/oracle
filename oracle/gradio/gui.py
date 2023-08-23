@@ -13,7 +13,7 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
 
     with gr.Accordion('Settings', open=False, elem_id='settings'):
         default_context = CONTEXTS['None']
-        motivation = gr.Dropdown(
+        motive = gr.Dropdown(
             label='Motivation',
             value=default_context.motive,
             choices=[default_context.motive],
@@ -25,15 +25,15 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             value=default_context.name,
             allow_custom_value=False,
         )
-        format = gr.Dropdown(
-            label='Response format',
-            choices=FORMATS,
+        style = gr.Dropdown(
+            label='Response Style',
+            choices=STYLES,
             allow_custom_value=True,
         )
 
     with gr.Row():
-        question = gr.Textbox(
-            placeholder='Question',
+        message = gr.Textbox(
+            placeholder='Message',
             lines=3,
             show_label=False,
             container=False,
@@ -44,14 +44,14 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
 
     # Controller
 
-    def chat_handler(source, motivation, format, question, chatbot):
+    def chat_handler(source, motive, style, message, chatbot):
         log = ''
         response = ''
-        preview = [question, None]
+        preview = [message, None]
         chatbot.append(preview)
         yield locked(), chatbot, hide(), show()
 
-        for change in chat(question, format, source, motivation):
+        for change in chat(message, motive, source, style):
             response = change.get('response', '')
             status = change.get('status', '')
             log = change.get('log', '')
@@ -64,19 +64,19 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
 
         preview[1] = response
         if log: preview[1] += fold(log)
-        if not status: question = ''
+        if not status: message = ''
 
-        yield unlocked(value=question), chatbot, show(), hide()
+        yield unlocked(value=message), chatbot, show(), hide()
 
     chat_thread = send.click(
         chat_handler,
-        inputs=[source, motivation, format, question, chatbot],
-        outputs=[question, chatbot, send, stop],
+        inputs=[source, motive, style, message, chatbot],
+        outputs=[message, chatbot, send, stop],
     )
 
     stop.click(
         lambda: (unlocked(), show(), hide()),
-        outputs=[question, send, stop],
+        outputs=[message, send, stop],
         cancels=[chat_thread],
     )
 
@@ -86,5 +86,5 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             choices=[CONTEXTS[source].motive],
         ),
         inputs=source,
-        outputs=motivation,
+        outputs=motive,
     )

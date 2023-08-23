@@ -1,4 +1,5 @@
 from threading import Thread
+from typing import Iterable
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
@@ -17,75 +18,82 @@ class ChatModel:
     min_reply_tokens: int = 256
     device: str = DEVICE
 
+    context = None
     inputs = None
     length = None
     log = ''
 
     system_prompt = ''
     context_prompt = ''
-    question_prompt = ''
+    user_prompt = ''
     format_prompt = ''
-    answer_prompt =  '### Answer:\n'
+    response_prompt =  '### Response:\n'
 
     def prepare(self):
-        self.prompt = ''.join((
+        if self.context:
+            context = '\n'.join(self.context)
+            self.context_prompt = f'### Search results:\n{context}\n\n'
+
+        self.prompt = self.log = ''.join((
             self.system_prompt,
             self.context_prompt,
-            self.question_prompt,
+            self.user_prompt,
             self.format_prompt,
-            self.answer_prompt,
+            self.response_prompt,
         ))
-        self.log = self.prompt
         self.inputs = self.tokenizer(
             self.prompt,
             return_tensors='pt',
             return_length=True,
             verbose=False,
         ).to(self.device)
+
         self.length = self.inputs.length[0]
         del self.inputs['length']
+
+        # Handle token overflow by discardling less relevant context.
+        if self.length > self.max_tokens - self.min_reply_tokens:
+            if self.context:
+                self.context = self.context[:-1]
+                return self.prepare()
+            else:
+                raise ValueError('The message is too long.')
     
-    def _reply(self, streamer):
+    def _reply(self, stream):
         self.model.generate(
             **self.inputs,
-            streamer=streamer,
+            streamer=stream,
             do_sample=True,
             top_p=0.95,
             top_k=0, 
             max_new_tokens=self.max_tokens - self.length,
         )
 
-    def reply(self):
-        decode_kwargs = dict(skip_special_tokens=True)
-        streamer = TextIteratorStreamer(
+    def reply(self, message: str) -> Iterable[str]:
+        self.user_prompt = f'### Message:\n{message}\n\n'
+        self.prepare()
+        stream = TextIteratorStreamer(
             self.tokenizer,
             skip_prompt=True,
-            decode_kwargs=decode_kwargs
+            skip_special_tokens=True,
         )
-        thread = Thread(target=self._reply, args=(streamer,))
+        thread = Thread(target=self._reply, args=(stream,))
         thread.start()
-        for chunk in streamer:
+        for chunk in stream:
             self.log += chunk
             yield self.log[len(self.prompt):]
 
-    def coach(self, motivation):
-        if motivation:
-            self.system_prompt = f'### System:\n{motivation}\n\n'
+    def coach(self, motive: str):
+        if motive:
+            self.system_prompt = f'### System:\n{motive}\n\n'
 
-    def ask(self, question):
-        self.question_prompt = f'### Question:\n{question}\n\n'
+    def study(self, context: list[str]):
+        # TODO: Stream context and token lengths.
+        self.context = list(context)
 
-    def set_format(self, style):
+    def mask(self, style: str):
         if style:
-            self.format_prompt = f'### Answer format:\n{style}\n\n'
-
-    def set_context(self, context):
-        sources = '\n'.join(context)
-        self.context_prompt = f'### Search results:\n{sources}\n\n'
-
-    @property
-    def overflow(self):
-        return self.length > self.max_tokens - self.min_reply_tokens
+            self.format_prompt = f'### Response format:\n{style}\n\n'
 
 
 class StableBeluga7B(ChatModel):

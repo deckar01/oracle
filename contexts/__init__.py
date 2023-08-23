@@ -4,7 +4,7 @@ from importlib import import_module
 
 class none:
     name = 'None'
-    motive = "Your are an AI chat bot. Answer the following question."
+    motive = "Your are an AI chat bot. Reply to the following message."
     find = None
 
 CONTEXTS = {'None': none}

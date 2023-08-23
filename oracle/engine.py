@@ -5,40 +5,27 @@ from oracle.log import log
 from oracle.models import StableBeluga7B
 
 
-def chat(question, format=None, source=None, motivation=None):
+def chat(message, motive=None, source=None, style=None):
     try:
         # TODO: Select other models.
         model = StableBeluga7B()
-        context = CONTEXTS[source]
-        model.coach(motivation)
-        model.ask(question)
-        model.set_format(format)
+        model.coach(motive)
+        model.mask(style)
 
+        context = CONTEXTS[source]
         if context.find:
             yield dict(status='searching...')
-            references = list(context.find(question))
-            model.set_context(references)
+            model.study(context.find(message))
 
         yield dict(status='thinking...')
-        model.prepare()
 
-        if context.find:
-            # TODO: Stream find() and optimize with partial token lengths.
-            while model.overflow and references:
-                references.pop()
-                model.set_context(references)
-                model.prepare()
-
-        if model.overflow:
-            raise ValueError('The question is too long.')
-
-        for progress in model.reply():
+        for progress in model.reply(message):
             yield dict(response=progress, status='...')
 
         yield dict(response=progress, log=model.log)
         log('history', model.log)
 
     except:
-        message = traceback.format_exc()
-        yield dict(status='Error', response='Error', log=message)
-        log('history/errors', message)
+        error = traceback.format_exc()
+        yield dict(status='Error', response='Error', log=error)
+        log('history/errors', error)

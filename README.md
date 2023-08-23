@@ -37,14 +37,21 @@ Logs are in `history/`.
 2. Subclass `ChatModel` in `oracle/models.py`.
 3. Import and use your `model` in `oracle/controller.py`.
 
+- `reply(message: str) -> Iterator[str]` - Stream a reply to the message.
+- `coach(motive: str)` - Set the system prompt.
+- `study(context: List[str])` - Include context in the prompt.
+- `mask(style: str)` - Mask the repsonse to the style.
+
+See `StableBeluga7B` in `oracle/models.py` for an example.
+
 ## Adding sources
 
 Add a module in `contexts/` that defines:
 
 - `name: str` - The source name to show in the GUI.
 - `motive: str` - The system prompt that coaches the model on how to
-    use the content.
-- `find(str): -> List[str]` - A function for finding sources of context
-    for a given question.
+    use the context.
+- `find(str): -> List[str]` - A method for finding sources of context
+    for a given message.
 
 See `contexts/oracle/` for an example.

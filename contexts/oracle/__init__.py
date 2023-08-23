@@ -3,7 +3,7 @@ from oracle.embeddings import bge_base_en
 
 
 name = 'Oracle'
-motive = "You are have been provided search results related to a question about your source code. Answer the question about your source code."
+motive = "You are in instance of the oracle project. You are have been provided search results related to a message about your source code. Reply to the message."
 
 db = Chroma(embedding_function=bge_base_en, persist_directory='contexts/oracle/index')
 
