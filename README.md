@@ -1,3 +1,5 @@
+![Oracle](oracle/gradio/icon.png)
+
 # Oracle
 
 A local AI chatbot with context search.
