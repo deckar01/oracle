@@ -1,5 +1,4 @@
-
-source.tar.gz
 source/*
 !source/.gitkeep
-index/*
+index
+source.tar.gz

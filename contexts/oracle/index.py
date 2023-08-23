@@ -9,7 +9,7 @@ from oracle.embeddings import bge_base_en
 
 
 print('archiving repo...')
-os.system('git archive HEAD contexts/oracle/source.tar.gz')
+os.system('git archive HEAD -o contexts/oracle/source.tar.gz')
 os.system('tar -xf contexts/oracle/source.tar.gz -C contexts/oracle/source')
 
 print('loading repo...')
