@@ -4,6 +4,14 @@ A local AI chatbot with context search.
 
 ![Screenshots](oracle/gradio/screenshots.png)
 
+## Features
+
+- Streaming responses
+- Convenient debug info
+- Working examples
+- Hardware agnostic
+- Thoughtfully abstracted
+
 ## Setup
 
 ```sh
@@ -55,3 +63,23 @@ Add a module in `contexts/` that defines:
     for a given message.
 
 See `contexts/oracle/` for an example.
+
+## Architecture
+
+- `oracle.gradio.gui` uses Gradio to build a web client. The Blocks
+    framework declares a component layout and event handlers. This
+    renders server-side and streams updates over a websocket.
+- `oracle.engine` is an event loop for streaming status updates and
+    partial results. This is intentionally model and UI agnostic to
+    allow customization with minimal API surface area. This handles
+    logging, error handling, and mostly importantly human-friendly
+    status events to explain long running model activities.
+- `oracle.models` contains low level text generation models. The base
+    class and example model lean heavily on `AutoTokenizer` and
+    `AutoModelForCausalLM` from `transformers` to simplify loading
+    a large language model. The model builds a prompt string, then
+    runs the model in a separate thread to stream the response.
+- `contexts.oracle.index` contains an example context that allows
+    this project to chat about its own source code. The files are
+    split into chunks, embedded into vectors using `BAAI/bge-base-en`,
+    stored in a Chroma database, and indexed for fast searching.
