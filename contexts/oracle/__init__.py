@@ -1,5 +1,5 @@
 from langchain.vectorstores import Chroma
-from oracle.embeddings import bge_base_en
+from contexts.oracle.embedding import bge_base_en
 
 
 name = 'Oracle'

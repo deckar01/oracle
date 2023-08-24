@@ -5,7 +5,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 from langchain.vectorstores import Chroma
 from langchain.document_loaders.text import TextLoader
 
-from oracle.embeddings import bge_base_en
+from contexts.oracle.embedding import bge_base_en
 
 
 print('archiving repo...')
