@@ -5,9 +5,7 @@ html {
 }
 
 * {
-    --block-radius: 0 !important;
-    --button-large-radius: 0 !important;
-    --input-radius: 0 !important;
+    --radius-lg: 0 !important;
     --layout-gap: 0 !important;
     --form-gap-width: 0 !important;
 }
@@ -45,10 +43,16 @@ footer {
     border: none !important;
 }
 
-button {
+button.lg {
     min-width: 0 !important;
     padding-left: 40px !important;
     padding-right: 40px !important;
+}
+
+button.sm {
+    min-width: 0 !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
 }
 
 textarea {

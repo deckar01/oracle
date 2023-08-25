@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Thread, Event
 
 
 MODELS = {}
@@ -19,6 +19,17 @@ def register_model(name, model=None):
         MODELS[name] = model
         return model
     return wrapper
+
+
+class ThreadStopper:
+    def __init__(self):
+        self.event = Event()
+
+    def __call__(self, *args, **kwargs):
+        return self.event.is_set()
+
+    def stop(self):
+        return self.event.set()
 
 
 class ChatModel:
@@ -72,7 +83,7 @@ class ChatModel:
         style: str = None,
         context: list[str] = None,
     ):
-        from transformers import TextIteratorStreamer
+        from transformers import TextIteratorStreamer, StoppingCriteriaList
 
         # Tokenize the prompt
         generate_options = self.get_inputs(message, motive, style, context)
@@ -81,6 +92,11 @@ class ChatModel:
         stream_options = dict(skip_prompt=True, skip_special_tokens=True)
         stream = TextIteratorStreamer(self.tokenizer, **stream_options)
         generate_options.update(streamer=stream)
+
+        # Allow stopping the generate thread early
+        stopper = ThreadStopper()
+        stoppers = StoppingCriteriaList([stopper])
+        generate_options.update(stopping_criteria=stoppers)
 
         # Configure the sampling strategy
         generate_options.update(do_sample=True)
@@ -91,12 +107,17 @@ class ChatModel:
         thread = Thread(target=self.model.generate, kwargs=generate_options)
         thread.start()
 
-        # Stream the response
-        response = ''
-        for chunk in stream:
-            response += chunk
-            yield response
-            self.log += chunk
+        try:
+            # Stream the response
+            response = ''
+            for chunk in stream:
+                response += chunk
+                yield response
+                self.log += chunk
+        finally:
+            # Stop the thread with an event
+            stopper.stop()
+            thread.join()
 
 
 @register_model('None')

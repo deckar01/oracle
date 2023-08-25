@@ -16,18 +16,24 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     chatbot_history = gr.Chatbot(elem_id='chatbot', show_label=False)
 
     with gr.Accordion('Settings', open=False, elem_id='settings'):
+        with gr.Row():
+            model_input = gr.Dropdown(
+                label='Chat Model',
+                allow_custom_value=True,
+                scale=1,
+            )
+            model_reload = gr.Button('Reload', scale=0)
 
-        model_input = gr.Dropdown(
-            label='Chat Model',
-            allow_custom_value=True,
-        )
+        with gr.Row():
+            context_input = gr.Dropdown(
+                label='Source',
+                allow_custom_value=False,
+            )
+            context_reload = gr.Button('Reload', scale=0)
+
         motive_input = gr.Dropdown(
             label='Motivation',
             allow_custom_value=True,
-        )
-        context_input = gr.Dropdown(
-            label='Source',
-            allow_custom_value=False,
         )
         style_input = gr.Dropdown(
             label='Response Style',
@@ -93,6 +99,17 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
         )),
         inputs=session_state,
         outputs=motive_input,
+    )
+
+    model_reload.click(
+        guard(lambda session: gr.update(choices=session.reload_models())),
+        inputs=session_state,
+        outputs=model_input,
+    )
+    context_reload.click(
+        guard(lambda session: gr.update(choices=session.reload_contexts())),
+        inputs=session_state,
+        outputs=context_input,
     )
 
     def chat_handler(chat, motive, style, message, chatbot):
