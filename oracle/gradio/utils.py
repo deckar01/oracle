@@ -24,6 +24,7 @@ def note(status):
     return f'<span class="status">{status}</span>'
 
 def fold(details, summary='View Context'):
+    details = details.replace('```', '\\`\\`\\`')
     return f'''
 <details>
 <summary>{summary}</summary>
