@@ -1,9 +1,8 @@
 import gradio as gr
 
-from contexts import CONTEXTS
 from oracle.session import ChatSession
-from oracle.gradio.config import STYLES
-from oracle.gradio.utils import *
+from .config import STYLES
+from .utils import *
 
 
 with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:

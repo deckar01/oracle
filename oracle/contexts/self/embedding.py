@@ -1,14 +1,10 @@
 from langchain.embeddings import HuggingFaceBgeEmbeddings
-import torch
 
+import oracle
 
-if torch.cuda.is_available() and torch.cuda.device_count():
-    DEVICE = 'cuda'
-else:
-    DEVICE = 'cpu'
 
 bge_base_en = HuggingFaceBgeEmbeddings(
     model_name='BAAI/bge-base-en',
-    model_kwargs={'device': DEVICE},
+    model_kwargs={'device': oracle.get_device()},
     encode_kwargs={'normalize_embeddings': True}
 )

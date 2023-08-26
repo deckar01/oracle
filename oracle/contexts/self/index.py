@@ -2,7 +2,7 @@ import subprocess
 
 from langchain.vectorstores import Chroma
 
-from contexts.oracle.embedding import bge_base_en
+from .embedding import bge_base_en
 
 
 def get_authors(file=None):
@@ -43,5 +43,5 @@ print('building db...')
 db = Chroma.from_texts(
     files,
     bge_base_en,
-    persist_directory='contexts/oracle/index',
+    persist_directory='oracle/contexts/self/index',
 )

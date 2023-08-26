@@ -1,7 +1,7 @@
 from pkgutil import iter_modules
 from importlib import import_module
 
-from oracle.log import log_error
+import oracle
 
 
 class none:
@@ -12,11 +12,11 @@ class none:
 
 CONTEXTS = {'None': none}
 
-for _, module_name, _ in iter_modules(['contexts']):
+for _, module_name, _ in iter_modules(['oracle/contexts']):
     try:
-        module = import_module(f'contexts.{module_name}')
+        module = import_module(f'oracle.contexts.{module_name}')
         if not hasattr(module, 'Context'):
             continue
         CONTEXTS[module.Context.name] = module.Context
     except:
-        log_error()
+        oracle.log_error()

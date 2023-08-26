@@ -1,6 +1,6 @@
 # Oracle
 
-A local AI chatbot with context search.
+A local chatbot with context search.
 
 ![Screenshots](oracle/gradio/screenshots.png)
 
@@ -12,6 +12,10 @@ A local AI chatbot with context search.
 - Hardware agnostic
 - Thoughtfully abstracted
 
+## Requirements
+
+- Python 3.10+
+
 ## Setup
 
 ```sh
@@ -20,12 +24,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Download the example model (requires git-lfs)
-git lfs install
-git lfs clone https://huggingface.co/stabilityai/StableBeluga-7B models/StableBeluga-7B
-
 # Index the example source
-python -m contexts.oracle.index
+python -m oracle.contexts.self.index
 ```
 
 Install `pytorch` via https://pytorch.org/get-started/locally/ for hardware acceleration.
@@ -37,24 +37,38 @@ python -m oracle.gradio
 ```
 
 The server configuration is located in `oracle/gradio/__init__.py`.
-Logs are in `history/`.
+Logs are in `.history/`.
 
-## Adding models
+Models set to automatically download from HuggingFace may take quite
+a while to download the first time they are selected.
 
-1. Clone models into the `models` folder.
-2. Subclass `ChatModel` in `oracle/models.py`.
-3. Import and use your `model` in `oracle/controller.py`.
+## Adding a new language generation model
 
-- `reply(message: str, **kwargs) -> Iterator[str]` - Stream a reply to the message.
-    - `motive: str` - Add a system prompt.
-    - `context: List[str]` - Add context to the prompt.
-    - `style: str` - Request a repsonse style.
+Add a module in  `oracle/models/` that defines:
 
-See `StableBeluga7B` in `oracle/models.py` for an example.
+- `class Model:`
+    - `name: str` - The model name to show in the GUI.
+    - `reply(message: str, **kwargs) -> Iterator[str]` - Reply to the message (preferably by yielding chunks).
+        - `motive: str` - Add a system prompt.
+        - `context: List[str]` - Add context to the prompt.
+        - `style: str` - Request a repsonse style.
+    - `log: Optional[str]` - Any information useful for debugging the last `reply()` call
+        (preferably the complete prompt and response).
 
-## Adding sources
+The easiest way to do this is to subclass `oracle.models.TransformersModel` with:
 
-Add a module in `contexts/` that defines:
+- `class Model(oracle.models.TransformersModel):`
+    - `name: str` - The model name to show in the GUI.
+    - `model_id: str` - The Model ID hosted by HuggingFace.
+        (This also accepts a local path to a pretrained model.)
+    - `max_tokens: int` - The maximum number of tokens that the model supports.
+
+
+See `oracle/models/stable_beluga_7b.py` for an example.
+
+## Adding new sources of context
+
+Add a module in `oracle/contexts/` that defines:
 
 - `class Context`
     - `name: str` - The source name to show in the GUI.
@@ -63,7 +77,7 @@ Add a module in `contexts/` that defines:
     - `find(message: str): -> Iterator[str]` - The method for finding sources of context
         for a given message.
 
-See `contexts/oracle/` for an example.
+See the files in `oracle/contexts/self/` for an example.
 
 ## Architecture
 
@@ -77,11 +91,15 @@ See `contexts/oracle/` for an example.
     importantly generating human-friendly status events to explain
     long running model activities.
 - `oracle.models` contains low level text generation models. The base
-    class and example model lean heavily on `AutoTokenizer` and
-    `AutoModelForCausalLM` from `transformers` to simplify loading
-    a large language model. The model builds a prompt string, then
-    runs the model in a separate thread to stream the response.
-- `contexts.oracle.index` contains an example context that allows
+    class leans heavily on `AutoTokenizer` and `AutoModelForCausalLM`
+    from `transformers` to simplify loading a large language model
+    from HuggingFace. The model builds a prompt string, then runs
+    the model in a separate thread to stream the response.
+- `oracle.contexts` contains sources of context used to improve
+    responses with domain specific information. Since the input size
+    of models are finite, the context should break the information
+    down into coherent snippets.
+- `oracle.contexts.self.index` contains an example context that allows
     this project to chat about its own source code. The files are
     split into chunks, embedded into vectors using `BAAI/bge-base-en`,
     stored in a Chroma database, and indexed for fast searching.

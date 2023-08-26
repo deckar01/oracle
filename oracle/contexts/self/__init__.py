@@ -1,12 +1,12 @@
 class Context:
-    name = 'Oracle'
+    name = 'Self'
     motive = "You are an instance of the oracle project. You have been provided search results related to a message about your source code. Reply to the message."
 
     def __init__(self):
         from langchain.vectorstores import Chroma
-        from contexts.oracle.embedding import bge_base_en
+        from .embedding import bge_base_en
 
-        self.db = Chroma(embedding_function=bge_base_en, persist_directory='contexts/oracle/index')
+        self.db = Chroma(embedding_function=bge_base_en, persist_directory='oracle/contexts/self/index')
 
     def find(self, text):
         instruction = 'Represent this sentence for searching relevant passages: '

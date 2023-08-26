@@ -1,8 +1,8 @@
 import importlib
 
+import oracle
+import oracle.contexts
 import oracle.models
-from oracle.log import log, log_error
-import contexts
 
 
 MODEL_CACHE = {}
@@ -16,7 +16,7 @@ class ChatSession:
         self.models = list(self.MODELS.keys())
 
         self.reload_contexts()
-        self.CONTEXTS = contexts.CONTEXTS
+        self.CONTEXTS = oracle.contexts.CONTEXTS
         self.contexts = list(self.CONTEXTS.keys())
 
         self.set_model(self.models[0])
@@ -29,8 +29,8 @@ class ChatSession:
         return self.models
 
     def reload_contexts(self):
-        importlib.reload(contexts)
-        self.CONTEXTS = contexts.CONTEXTS
+        importlib.reload(oracle.contexts)
+        self.CONTEXTS = oracle.contexts.CONTEXTS
         self.contexts = list(self.CONTEXTS.keys())
         return self.contexts
 
@@ -38,7 +38,7 @@ class ChatSession:
         try:
             # https://github.com/gradio-app/gradio/issues/5348
             if model not in self.MODELS:
-                return self.model_name
+                return self.model.name
 
             if model not in MODEL_CACHE:
                 self.model = None
@@ -47,19 +47,18 @@ class ChatSession:
                     MODEL_CACHE.clear()
                 MODEL_CACHE[model] = self.MODELS[model]()
             self.model = MODEL_CACHE[model]
-            self.model_name = model
 
         except:
-            log_error()
+            oracle.log_error()
             self.MODELS.pop(model, None)
 
-        return self.model_name
+        return self.model.name
 
     def set_context(self, context):
         try:
             # https://github.com/gradio-app/gradio/issues/5348
             if context not in self.CONTEXTS:
-                return self.model_name
+                return self.context.name
 
             if context not in CONTEXT_CACHE:
                 self.context = None
@@ -68,29 +67,35 @@ class ChatSession:
                     CONTEXT_CACHE.clear()
                 CONTEXT_CACHE[context] = self.CONTEXTS[context]()
             self.context = CONTEXT_CACHE[context]
-            self.context_name = context
 
         except:
-            log_error()
+            oracle.log_error()
             if context in self.CONTEXTS:
                 self.CONTEXTS.pop(context, None)
 
-        return self.context_name
+        return self.context.name
 
     def get_response(self, message, motive=None, style=None):
         try:
-            yield dict(status='searching...')
+            progress = dict(status='searching...')
+            yield progress
             context = self.context.find(message)
 
-            yield dict(status='thinking...')
+            progress.update(status='thinking...')
+            yield progress
             options = dict(motive=motive, style=style, context=context)
-            for progress in self.model.reply(message, **options):
-                yield dict(response=progress, status='...', log=self.model.log)
+            progress.update(response='')
+            for chunk in self.model.reply(message, **options):
+                progress['response'] += chunk
+                yield progress
 
-            yield dict(response=progress, log=self.model.log)
-            log(self.model.log)
+            progress.update(log=getattr(self.model, 'log', None))
+            yield progress
+
+            if progress['log']: oracle.log(progress['log'])
+
         except GeneratorExit:
             raise
         except:
-            error = log_error()
+            error = oracle.log_error()
             yield dict(status='Error', response='Error', log=error)

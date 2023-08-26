@@ -1,24 +1,8 @@
+from pkgutil import iter_modules
+from importlib import import_module
 from threading import Thread, Event
 
-
-MODELS = {}
-
-def get_device():
-    import torch
-
-    if torch.cuda.is_available() and torch.cuda.device_count():
-        return 'cuda'
-    else:
-        return 'cpu'
-
-def register_model(name, model=None):
-    if model:
-        MODELS[name] = model
-        return model
-    def wrapper(model):
-        MODELS[name] = model
-        return model
-    return wrapper
+import oracle
 
 
 class ThreadStopper:
@@ -32,12 +16,29 @@ class ThreadStopper:
         return self.event.set()
 
 
-class ChatModel:
+class TransformersModel:
+    name: str
+    model_id: str
     max_tokens: int
+
     min_reply_tokens: int = 256
     response_prompt =  '### Response:\n'
 
-    log = ''
+    log = None
+
+    def __init__(self):
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        import torch
+
+        self.device = oracle.get_device()
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_id,
+            torch_dtype=torch.float16 if self.device == 'cuda' else None,
+            low_cpu_mem_usage=True,
+            device_map='auto',
+            offload_folder=".offload",
+        )
 
     def get_inputs(self, message, motive, style, context):
         prompt = ''
@@ -56,10 +57,10 @@ class ChatModel:
             prompt += f'### Response format:\n{style}\n\n'
 
         prompt += self.response_prompt
-        self.log = prompt
+        self.log = f'[model: {self.name}]\n\n{prompt}'
 
         tokenizer_options = dict(return_tensors='pt', return_length=True, verbose=False)
-        inputs = self.tokenizer(prompt, **tokenizer_options).to(get_device())
+        inputs = self.tokenizer(prompt, **tokenizer_options).to(self.device)
 
         length = inputs.length[0]
         del inputs['length']
@@ -104,15 +105,17 @@ class ChatModel:
         generate_options.update(top_k=0)
 
         # Run the model in a thread for streaming
-        thread = Thread(target=self.model.generate, kwargs=generate_options)
+        thread = Thread(
+            target=self.model.generate,
+            kwargs=generate_options,
+            daemon=True,
+        )
         thread.start()
 
         try:
             # Stream the response
-            response = ''
             for chunk in stream:
-                response += chunk
-                yield response
+                yield chunk
                 self.log += chunk
         finally:
             # Stop the thread with an event
@@ -120,27 +123,23 @@ class ChatModel:
             thread.join()
 
 
-@register_model('None')
-class NoChat(ChatModel):
+class NoModel:
+    name = 'None'
+
     def reply(self, message, *, context, **_):
         if context:
             return ['\n\n'.join(f'```\n{c}\n```' for c in context)]
         else:
             return [message]
 
-@register_model('StableBeluga-7B')
-class StableBeluga7B(ChatModel):
-    max_tokens = 4096
 
-    def __init__(self):
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        import torch
+MODELS = {'None': NoModel}
 
-        self.tokenizer = AutoTokenizer.from_pretrained('models/StableBeluga-7B')
-        self.model = AutoModelForCausalLM.from_pretrained(
-            'models/StableBeluga-7B',
-            torch_dtype=torch.float16 if get_device() == 'cuda' else None,
-            low_cpu_mem_usage=True,
-            device_map='auto',
-            offload_folder="models/StableBeluga-7B/offload",
-        )
+for _, module_name, _ in iter_modules(['oracle/models']):
+    try:
+        module = import_module(f'oracle.models.{module_name}')
+        if not hasattr(module, 'Model'):
+            continue
+        MODELS[module.Model.name] = module.Model
+    except:
+        oracle.log_error()

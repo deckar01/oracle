@@ -1,3 +1,6 @@
 .venv/
+.offload/
+.history/
+
 __pycache__
 .DS_Store
