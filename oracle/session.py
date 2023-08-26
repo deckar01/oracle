@@ -77,7 +77,7 @@ class ChatSession:
 
         return self.context_name
 
-    def __call__(self, message, motive=None, style=None):
+    def get_response(self, message, motive=None, style=None):
         try:
             yield dict(status='searching...')
             context = self.context.find(message)

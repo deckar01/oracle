@@ -1,3 +1,5 @@
+import inspect
+
 import gradio as gr
 
 
@@ -7,11 +9,12 @@ def locked(**kwargs):
 def unlocked(**kwargs):
     return gr.update(**kwargs, interactive=True)
 
-def guard(op):
-    def wrapper(*args, **kwargs):
-        yield locked()
-        yield op(*args, **kwargs)
-        yield unlocked()
+def on(event, **kwargs):
+    def wrapper(fn):
+        sig = inspect.get_annotations(fn)
+        outputs = sig.pop('return', None)
+        inputs = list(sig.values())
+        return event(fn, inputs=inputs, outputs=outputs, **kwargs)
     return wrapper
 
 def show():
