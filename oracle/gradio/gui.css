@@ -16,7 +16,7 @@ body {
 }
 
 code {
-    white-space: pre-wrap;
+    white-space: pre-wrap !important;
 }
 
 summary,
@@ -79,7 +79,7 @@ textarea {
     background-color: var(--background-fill-primary);
 }
 
+#chatbot,
 #settings {
-    border-top: 1px solid var(--border-color-primary) !important;
     border-bottom: 1px solid var(--border-color-primary) !important;
 }

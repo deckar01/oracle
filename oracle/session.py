@@ -77,7 +77,11 @@ class ChatSession:
 
     def get_response(self, message, motive=None, style=None):
         try:
-            progress = dict(status='searching...')
+            logs = {}
+            progress = dict(message=message)
+            yield progress
+
+            progress = dict(status='researching...')
             yield progress
             context = self.context.find(message)
 
@@ -89,13 +93,15 @@ class ChatSession:
                 progress['response'] += chunk
                 yield progress
 
-            progress.update(log=getattr(self.model, 'log', None))
+            progress.update(status='done')
+            logs['Response Log'] = getattr(self.model, 'log', None)
+            progress.update(logs=logs)
             yield progress
 
-            if progress['log']: oracle.log(progress['log'])
+            for log in progress['logs'].values(): oracle.log(log)
 
         except GeneratorExit:
             raise
         except:
             error = oracle.log_error()
-            yield dict(status='Error', response='Error', log=error)
+            yield dict(status='error', response='Error', logs={'Debug': error})

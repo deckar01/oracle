@@ -9,20 +9,28 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     # Model
 
     session_state = gr.State(ChatSession)
+    raw_chat_log = persist(gr.State(list))
 
     # View
 
-    chat_log = gr.Chatbot(elem_id='chatbot', show_label=False)
+    with gr.Accordion('☰', open=False, elem_id='settings'):
+        with gr.Tab('Model'):
+            model_input = persist(gr.Dropdown(label='Chat Model'))
+            style_input = persist(gr.Dropdown(
+                label='Response Style',
+                choices=STYLES,
+                allow_custom_value=True,
+            ))
 
-    with gr.Accordion('Settings', open=False, elem_id='settings'):
-        model_input = gr.Dropdown(label='Chat Model')
-        context_input = gr.Dropdown(label='Source')
-        motive_input = gr.Textbox(label='Motivation')
-        style_input = gr.Dropdown(
-            label='Response Style',
-            choices=STYLES,
-            allow_custom_value=True,
-        )
+        with gr.Tab('Context'):
+            context_input = persist(gr.Dropdown(label='Source'))
+            motive_input = persist(gr.Textbox(label='Motivation'))
+            debug_checkbox = persist(gr.Checkbox(label='Show debug info?'))
+
+        with gr.Tab('Session'):
+            clear_session_button = gr.Button('Clear Session', variant='stop')
+
+    chat_log = gr.Chatbot(elem_id='chatbot', show_label=False)
 
     with gr.Row():
         message_input = gr.Textbox(
@@ -38,8 +46,17 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     # Controller
 
     @on(demo.load)
-    def default_to_latest(session: session_state) -> {model_input, context_input}:
+    def load_defaults(
+        raw_chat: raw_chat_log,
+        debug: debug_checkbox,
+        session: session_state,
+    ) -> {
+        chat_log,
+        model_input,
+        context_input,
+    }:
         return {
+            chat_log: refresh_chat(raw_chat, debug),
             model_input: gr.update(
                 value=session.models[-1],
                 choices=session.models,
@@ -73,25 +90,47 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             motive_input: session.context.motive,
         }
 
+    def refresh_chat(
+        raw_chat: raw_chat_log,
+        debug: debug_checkbox,
+    ) -> chat_log:
+        preview = []
+        for exchange in raw_chat:
+            message = exchange.get('message', '')
+            response = exchange.get('response', '')
+            status = exchange.get('status', None)
+            if status and status != 'done':
+                response += note(status)
+            if debug:
+                for name, log in exchange.get('logs', {}).items():
+                    response += fold(log, name)
+            preview.append((message, response or None))
+        return preview
+
+    on(debug_checkbox.change, refresh_chat)
+
     @on(send_button.click)
     def get_chat_response(
         session: session_state,
         motive: motive_input,
         style: style_input,
+        debug: debug_checkbox,
         message: message_input,
-        chat: chat_log
+        raw_chat: raw_chat_log,
+        chat: chat_log,
+        request: gr.Request,
     ) -> {
         message_input,
+        raw_chat_log,
         chat_log,
         send_button,
         stop_button,
     }:
-        log = ''
-        response = ''
-        preview = [message, None]
-        chat.append(preview)
+        preview = {}
+        raw_chat.append(preview)
         progress = {
             message_input: locked(),
+            raw_chat_log: raw_chat,
             chat_log: chat,
             send_button: hide(),
             stop_button: show(),
@@ -99,18 +138,14 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
         yield progress
 
         for change in session.get_response(message, motive, style):
-            response = change.get('response', '')
-            status = change.get('status', '')
-            log = change.get('log', '')
-
-            preview[1] = response
-            if status: preview[1] += note(status)
-            if log: preview[1] += fold(log)
+            preview.update(change)
+            progress[chat_log] = refresh_chat(raw_chat, debug)
             yield progress
 
-        preview[1] = response
-        if log: preview[1] += fold(log)
-        if not status: message = ''
+        raw_chat_log.change(raw_chat, request)
+
+        if preview.get('status', None) == 'done':
+            message = ''
         progress[message_input] = unlocked(value=message)
         progress[send_button] = show()
         progress[stop_button] = hide()
@@ -122,4 +157,12 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             message_input: unlocked(),
             send_button: show(),
             stop_button: hide(),
+        }
+
+    @on(clear_session_button.click)
+    def clear_session(request: gr.Request) -> {raw_chat_log, chat_log}:
+        raw_chat_log.change([], request)
+        return {
+            raw_chat_log: [],
+            chat_log: refresh_chat([], False)
         }
