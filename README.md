@@ -10,7 +10,8 @@ A local chatbot with context search.
 - Convenient debug info
 - Working examples
 - Hardware agnostic
-- Thoughtfully abstracted
+- Open user registration
+- Session persistence
 
 ## Requirements
 
