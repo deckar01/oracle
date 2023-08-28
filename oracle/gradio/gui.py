@@ -14,6 +14,12 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     # View
 
     with gr.Accordion('☰', open=False, elem_id='settings'):
+        with gr.Tab('Context'):
+            context_input = persist(gr.Dropdown(label='Source'))
+            motive_input = persist(gr.Textbox(label='Motivation'))
+            keyword_checkbox = persist(gr.Checkbox(True, label='Ask the model for keywords?'))
+            debug_checkbox = persist(gr.Checkbox(label='Show debug info?'))
+
         with gr.Tab('Model'):
             model_input = persist(gr.Dropdown(label='Chat Model'))
             style_input = persist(gr.Dropdown(
@@ -21,12 +27,6 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
                 choices=STYLES,
                 allow_custom_value=True,
             ))
-
-        with gr.Tab('Context'):
-            context_input = persist(gr.Dropdown(label='Source'))
-            motive_input = persist(gr.Textbox(label='Motivation'))
-            keyword_checkbox = persist(gr.Checkbox(True, label='Ask the model for keywords?'))
-            debug_checkbox = persist(gr.Checkbox(label='Show debug info?'))
 
         with gr.Tab('Session'):
             clear_session_button = gr.Button('Clear Session', variant='stop')
