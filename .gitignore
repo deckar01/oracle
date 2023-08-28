@@ -1,6 +1,7 @@
 .venv/
 .offload/
 .history/
+oracle.db
 
 __pycache__
 .DS_Store

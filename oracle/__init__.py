@@ -1,3 +1,5 @@
+DB_PATH = 'oracle.db'
+
 def get_device():
     import torch
 

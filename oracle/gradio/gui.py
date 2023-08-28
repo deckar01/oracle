@@ -9,20 +9,20 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     # Model
 
     session_state = gr.State(ChatSession)
-    raw_chat_log = persist(gr.State(list))
+    raw_chat_log = persist("chat", gr.State(list))
 
     # View
 
     with gr.Accordion('☰', open=False, elem_id='settings'):
         with gr.Tab('Context'):
-            context_input = persist(gr.Dropdown(label='Source'))
-            motive_input = persist(gr.Textbox(label='Motivation'))
-            keyword_checkbox = persist(gr.Checkbox(True, label='Ask the model for keywords?'))
-            debug_checkbox = persist(gr.Checkbox(label='Show debug info?'))
+            context_input = persist("context", gr.Dropdown(label='Source'))
+            motive_input = persist("motive", gr.Textbox(label='Motivation'))
+            keyword_checkbox = persist("keyword", gr.Checkbox(True, label='Ask the model for keywords?'))
+            debug_checkbox = persist("debug", gr.Checkbox(label='Show debug info?'))
 
         with gr.Tab('Model'):
-            model_input = persist(gr.Dropdown(label='Chat Model'))
-            style_input = persist(gr.Dropdown(
+            model_input = persist("model", gr.Dropdown(label='Chat Model'))
+            style_input = persist("style", gr.Dropdown(
                 label='Response Style',
                 choices=STYLES,
                 allow_custom_value=True,

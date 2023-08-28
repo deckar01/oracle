@@ -1,9 +1,12 @@
 import inspect
-from uuid import uuid4
+import sqlite3
+import pickle
 
 import gradio as gr
 from gradio.context import Context
 from gradio.events import Changeable
+
+from oracle import DB_PATH
 
 
 def locked(**kwargs):
@@ -26,23 +29,31 @@ def on(event, fn=None, **kwargs):
     else:
         return wrapper
 
-user_sessions = {}
+def persist(name, component):
+    connection = sqlite3.connect(DB_PATH)
+    try: connection.execute(f"CREATE TABLE {name} (user TEXT PRIMARY KEY, value TEXT)")
+    except: pass
+    connection.close()
 
-def get_session_id(request):
-    session_id = user_sessions.get(request.username, None)
-    if not session_id:
-        session_id = uuid4()
-    if request.username:
-        user_sessions[request.username] = session_id
-    return session_id
-
-def persist(component):
-    sessions = {}
     @on(Context.root_block.load)
     def resume_session(value: component, request: gr.Request) -> component:
-        return sessions.get(get_session_id(request), value)
+        connection = sqlite3.connect(DB_PATH)
+        query = connection.execute(
+            f"SELECT value FROM {name} WHERE user=?",
+            (request.username,),
+        )
+        saved_value = query.fetchone()
+        connection.close()
+        return pickle.loads(saved_value[0]) if saved_value else value
+
     def update_session(value: component, request: gr.Request):
-        sessions[get_session_id(request)] = value
+        connection = sqlite3.connect(DB_PATH)
+        query = connection.execute(
+            f"INSERT OR REPLACE INTO {name} VALUES (?, ?)",
+            (request.username, pickle.dumps(value, 5)),
+        )
+        connection.commit()
+        connection.close()
 
     if hasattr(component, 'change'):
         on(component.change, update_session)
