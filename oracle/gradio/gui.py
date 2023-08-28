@@ -25,6 +25,7 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
         with gr.Tab('Context'):
             context_input = persist(gr.Dropdown(label='Source'))
             motive_input = persist(gr.Textbox(label='Motivation'))
+            keyword_checkbox = persist(gr.Checkbox(True, label='Ask the model for keywords?'))
             debug_checkbox = persist(gr.Checkbox(label='Show debug info?'))
 
         with gr.Tab('Session'):
@@ -112,6 +113,7 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     @on(send_button.click)
     def get_chat_response(
         session: session_state,
+        keyword: keyword_checkbox,
         motive: motive_input,
         style: style_input,
         debug: debug_checkbox,
@@ -137,7 +139,7 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
         }
         yield progress
 
-        for change in session.get_response(message, motive, style):
+        for change in session.get_response(message, motive, style, keyword):
             preview.update(change)
             progress[chat_log] = refresh_chat(raw_chat, debug)
             yield progress

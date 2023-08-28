@@ -75,15 +75,25 @@ class ChatSession:
 
         return self.context.name
 
-    def get_response(self, message, motive=None, style=None):
+    def get_response(self, message, motive=None, style=None, use_keywords=False):
         try:
             logs = {}
             progress = dict(message=message)
             yield progress
 
+            if use_keywords and self.context.name != 'None':
+                progress.update(status='reading...')
+                yield progress
+                keyword_motive = 'Produce a list of keywords related to the following message that can be used to search for a response.'
+                keyword_style = 'A comma separated list of 8 to 24 keywords.'
+                keywords = ''.join(self.model.reply(message, motive=keyword_motive, style=keyword_style))
+                logs['Keyword Log'] = getattr(self.model, 'log', None)
+            else:
+                keywords = message
+
             progress = dict(status='researching...')
             yield progress
-            context = self.context.find(message)
+            context = self.context.find(keywords)
 
             progress.update(status='thinking...')
             yield progress
