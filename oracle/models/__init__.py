@@ -1,5 +1,5 @@
 from pkgutil import iter_modules
-from importlib import import_module
+from importlib import import_module, reload
 from threading import Thread, Event
 
 import oracle
@@ -138,6 +138,7 @@ MODELS = {'None': NoModel}
 for _, module_name, _ in iter_modules(['oracle/models']):
     try:
         module = import_module(f'oracle.models.{module_name}')
+        module = reload(module)
         if not hasattr(module, 'Model'):
             continue
         MODELS[module.Model.name] = module.Model

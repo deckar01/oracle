@@ -1,5 +1,5 @@
 from pkgutil import iter_modules
-from importlib import import_module
+from importlib import import_module, reload
 
 import oracle
 
@@ -15,6 +15,7 @@ CONTEXTS = {'None': none}
 for _, module_name, _ in iter_modules(['oracle/contexts']):
     try:
         module = import_module(f'oracle.contexts.{module_name}')
+        module = reload(module)
         if not hasattr(module, 'Context'):
             continue
         CONTEXTS[module.Context.name] = module.Context

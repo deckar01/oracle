@@ -22,4 +22,5 @@ def log_error():
     import traceback
 
     error = traceback.format_exc()
+    print(error)
     return log(error, '.history/errors')

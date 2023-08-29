@@ -34,11 +34,15 @@ class ChatSession:
         self.contexts = list(self.CONTEXTS.keys())
         return self.contexts
 
-    def set_model(self, model):
+    def set_model(self, model, reload=False):
         try:
             # https://github.com/gradio-app/gradio/issues/5348
             if model not in self.MODELS:
                 return self.model.name
+            
+            if reload:
+                MODEL_CACHE.clear()
+                self.reload_models()
 
             if model not in MODEL_CACHE:
                 self.model = None
@@ -54,11 +58,15 @@ class ChatSession:
 
         return self.model.name
 
-    def set_context(self, context):
+    def set_context(self, context, reload=False):
         try:
             # https://github.com/gradio-app/gradio/issues/5348
             if context not in self.CONTEXTS:
                 return self.context.name
+
+            if reload:
+                CONTEXT_CACHE.clear()
+                self.reload_contexts()
 
             if context not in CONTEXT_CACHE:
                 self.context = None

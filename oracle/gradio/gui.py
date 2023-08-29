@@ -2,7 +2,7 @@ import gradio as gr
 
 from oracle.session import ChatSession
 from .config import STYLES
-from .utils import *
+from .utils import on, persist, note, fold, show, hide, locked, unlocked
 
 
 with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
@@ -16,12 +16,17 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
     with gr.Accordion('☰', open=False, elem_id='settings'):
         with gr.Tab('Context'):
             context_input = persist("context", gr.Dropdown(label='Source'))
+            reload_context_button = gr.Button('Reload Context')
             motive_input = persist("motive", gr.Textbox(label='Motivation'))
-            keyword_checkbox = persist("keyword", gr.Checkbox(True, label='Ask the model for keywords?'))
+            keyword_checkbox = persist("keyword", gr.Checkbox(
+                True,
+                label='Ask the model for keywords?'
+            ))
             debug_checkbox = persist("debug", gr.Checkbox(label='Show debug info?'))
 
         with gr.Tab('Model'):
             model_input = persist("model", gr.Dropdown(label='Chat Model'))
+            reload_model_button = gr.Button('Reload Model')
             style_input = persist("style", gr.Dropdown(
                 label='Response Style',
                 choices=STYLES,
@@ -75,13 +80,27 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             choices=session.models,
         )
 
+    @on(reload_model_button.click)
+    def reload_model(session: session_state, model: model_input) -> model_input:
+        return gr.update(
+            value=session.set_model(model, reload=True),
+            choices=session.models,
+        )
+    
+    def get_placehoder(context):
+        placeholder = 'Message'
+        if context != 'None':
+            placeholder += f' about {context}'
+        return placeholder
+
     @on(context_input.change)
     def change_context(
         session: session_state,
-        context: context_input
+        context: context_input,
     ) -> {
         context_input,
         motive_input,
+        message_input,
     }:
         return {
             context_input: gr.update(
@@ -89,7 +108,15 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
                 choices=session.contexts,
             ),
             motive_input: session.context.motive,
+            message_input: gr.update(placeholder=get_placehoder(context))
         }
+
+    @on(reload_context_button.click)
+    def reload_context(session: session_state, context: context_input) -> context_input:
+        return gr.update(
+            value=session.set_context(context, reload=True),
+            choices=session.contexts,
+        )
 
     def refresh_chat(
         raw_chat: raw_chat_log,
