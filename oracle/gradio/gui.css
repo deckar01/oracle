@@ -1,22 +1,42 @@
 html {
-    display: block;
     height: 100dvh;
-    min-height: 100dvh !important;
-}
-
-* {
-    --radius-lg: 0 !important;
-    --layout-gap: 0 !important;
-    --form-gap-width: 0 !important;
 }
 
 body {
-    height: 100dvh;
-    background-color: var(--background-fill-primary);
+    background-color: var(--block-background-fill);
 }
 
 code {
     white-space: pre-wrap !important;
+}
+
+textarea {
+    overflow: auto !important;
+}
+
+.block,
+.form {
+    border: none !important;
+}
+
+.tabs,
+.tab-nav button.selected {
+    background: var(--block-background-fill) !important;
+}
+
+.tab-nav button:first-child {
+    border: var(--input-border-width) solid var(--border-color-primary) !important;
+    border-left-width: 0 !important;
+    border-bottom-width: 0 !important;
+    background: var(--background-fill-primary) !important;
+}
+
+.tab-nav button:first-child:not(.selected) {
+    border-bottom-width: var(--input-border-width) !important;
+}
+
+.tab-nav button:nth-child(2).selected {
+    border-left-width: 0 !important;
 }
 
 summary,
@@ -38,25 +58,11 @@ footer {
     flex-direction: column;
 }
 
-.block,
-.form {
-    border: none !important;
-}
-
-button.lg {
-    min-width: 0 !important;
-    padding-left: 40px !important;
-    padding-right: 40px !important;
-}
-
-button.sm {
-    min-width: 0 !important;
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-}
-
-textarea {
-    background: var(--background-fill-primary) !important;
+.options {
+    border: var(--input-border-width) solid var(--border-color-primary) !important;
+    margin-left: calc(-1 * var(--input-border-width)) !important;
+    position: unset !important;
+    top: unset !important;
 }
 
 .gradio-container {
@@ -72,14 +78,14 @@ textarea {
     height: 100dvh;
 }
 
+#settings {
+    display: none !important;
+}
+
 #chatbot {
     height: auto !important;
     flex-grow: 1;
     overflow: auto;
     background-color: var(--background-fill-primary);
-}
-
-#chatbot,
-#settings {
     border-bottom: 1px solid var(--border-color-primary) !important;
 }

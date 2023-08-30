@@ -5,7 +5,26 @@ from .config import STYLES
 from .utils import on, persist, note, fold, show, hide, locked, unlocked
 
 
-with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
+theme = gr.themes.Default(
+    primary_hue=gr.themes.colors.blue,
+    radius_size='none',
+    spacing_size='sm',
+).set(
+    layout_gap='0',
+    form_gap_width='0',
+    input_background_fill='*background_fill_primary',
+    input_background_fill_dark='*background_fill_primary',
+    block_shadow='none',
+    block_shadow_dark='none',
+)
+
+demo = gr.Blocks(
+    theme,
+    title='Oracle',
+    css='oracle/gradio/gui.css'
+)
+
+with demo.queue():
     # Model
 
     session_state = gr.State(ChatSession)
@@ -13,41 +32,46 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
 
     # View
 
-    with gr.Accordion('☰', open=False, elem_id='settings'):
-        with gr.Tab('Context'):
-            context_input = persist("context", gr.Dropdown(label='Source'))
+    gr.Tab('Oracle', elem_id='settings')
+
+    with gr.Tab('Context'):
+        context_input = persist("context", gr.Dropdown(label='Source'))
+        motive_input = persist("motive", gr.Textbox(label='Motivation', lines=1))
+        keyword_checkbox = persist("keyword", gr.Checkbox(
+            True,
+            label='Ask the model for keywords?'
+        ))
+        debug_checkbox = persist("debug", gr.Checkbox(label='Show debug info?'))
+        with gr.Accordion('Advanced', open=False):
             reload_context_button = gr.Button('Reload Context')
-            motive_input = persist("motive", gr.Textbox(label='Motivation'))
-            keyword_checkbox = persist("keyword", gr.Checkbox(
-                True,
-                label='Ask the model for keywords?'
-            ))
-            debug_checkbox = persist("debug", gr.Checkbox(label='Show debug info?'))
 
-        with gr.Tab('Model'):
-            model_input = persist("model", gr.Dropdown(label='Chat Model'))
+    with gr.Tab('Model'):
+        model_input = persist("model", gr.Dropdown(label='Chat Model'))
+        style_input = persist("style", gr.Dropdown(
+            label='Response Style',
+            choices=STYLES,
+            allow_custom_value=True,
+        ))
+        with gr.Accordion('Advanced', open=False):
             reload_model_button = gr.Button('Reload Model')
-            style_input = persist("style", gr.Dropdown(
-                label='Response Style',
-                choices=STYLES,
-                allow_custom_value=True,
-            ))
 
-        with gr.Tab('Session'):
+    with gr.Tab('Session'):
+        with gr.Accordion('Advanced', open=False):
             clear_session_button = gr.Button('Clear Session', variant='stop')
 
     chat_log = gr.Chatbot(elem_id='chatbot', show_label=False)
 
     with gr.Row():
         message_input = gr.Textbox(
-            placeholder='Message',
+            placeholder='Send a message',
             lines=3,
+            min_width=600,
             show_label=False,
             container=False,
-            scale=1,
+            scale=99,
         )
-        send_button = gr.Button('Send', variant='primary', scale=0)
-        stop_button = gr.Button('Stop', variant='stop', visible=False, scale=0)
+        send_button = gr.Button('Send', variant='primary', scale=1)
+        stop_button = gr.Button('Stop', variant='stop', visible=False, scale=1)
 
     # Controller
 
@@ -86,9 +110,9 @@ with gr.Blocks(title='Oracle', css='oracle/gradio/gui.css').queue() as demo:
             value=session.set_model(model, reload=True),
             choices=session.models,
         )
-    
+
     def get_placehoder(context):
-        placeholder = 'Message'
+        placeholder = 'Send a message'
         if context != 'None':
             placeholder += f' about {context}'
         return placeholder
