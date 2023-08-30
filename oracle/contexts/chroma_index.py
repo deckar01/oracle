@@ -13,4 +13,4 @@ class ChromaIndex:
             k=8,
         )
         for doc, score in results:
-            yield f'# Relevance: {score:.0%}\n{doc.page_content}'
+            yield f'# {score:.0%} match: {doc.page_content}'

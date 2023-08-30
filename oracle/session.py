@@ -95,13 +95,16 @@ class ChatSession:
                 keyword_motive = 'Produce a list of keywords related to the following message that can be used to search for a response.'
                 keyword_style = 'A comma separated list of 8 to 24 keywords.'
                 keywords = ''.join(self.model.reply(message, motive=keyword_motive, style=keyword_style))
-                logs['Keyword Log'] = getattr(self.model, 'log', None)
+                logs['Keyword Generation'] = getattr(self.model, 'log', None)
             else:
                 keywords = message
 
             progress = dict(status='researching...')
             yield progress
-            context = self.context.find(keywords)
+            context = list(self.context.find(keywords))
+            for doc in context:
+                title = doc.split('\n', 1)[0]
+                logs[f'Context: {title}'] = doc
 
             progress.update(status='thinking...')
             yield progress
@@ -112,7 +115,7 @@ class ChatSession:
                 yield progress
 
             progress.update(status='done')
-            logs['Response Log'] = getattr(self.model, 'log', None)
+            logs['Full Prompt'] = getattr(self.model, 'log', None)
             progress.update(logs=logs)
             yield progress
 
