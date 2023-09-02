@@ -58,6 +58,8 @@ def persist(name, component):
         new_value = pickle.loads(saved_value[0]) if saved_value else value
         return new_value
 
+    component.resume = resume_session
+
     def update_session(value: component, request: gr.Request):
         connection = sqlite3.connect(DB_PATH)
         connection.execute(

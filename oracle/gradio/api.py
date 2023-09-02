@@ -20,7 +20,7 @@ class Oracle:
             for line in stream.iter_lines():
                 yield json.loads(line)
 
-    def meta(self, name, value=None):
+    def defaults(self, name, value=None):
         if not self.spec:
             return {}
         schema = self.params[name]['schema']
@@ -29,6 +29,12 @@ class Oracle:
             meta['value'] = value or default
         if choices := schema.get('enum', None):
             meta['choices'] = choices
-        if examples := schema.get('x-examples', None):
-            meta['examples'] = examples
+        elif examples := schema.get('x-examples', None):
+            meta['choices'] = examples
         return meta
+
+    def default_for(self, name, control):
+        if not self.spec:
+            return None
+        schema = self.params[name]['schema']
+        return schema.get('x-defaults', {}).get(control, None)

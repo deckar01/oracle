@@ -17,7 +17,7 @@ class ChatOptions(Schema):
     motive = fields.String(
         load_default=Context.map['None'].motive,
         metadata={
-            'x-examples': {
+            'x-defaults': {
                 context.name: context.motive
                 for context in Context.map.values()
             }

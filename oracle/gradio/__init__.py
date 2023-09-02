@@ -10,7 +10,7 @@ read from its OpenAPI schema.
 import gradio as gr
 
 from .api import Oracle
-from .event import on, note, fold, show, hide, locked, unlocked
+from .event import on, after, note, fold, show, hide, locked, unlocked
 from .session import persist
 from .theme import theme, css
 
@@ -63,28 +63,21 @@ with gr.Blocks(title='Oracle', theme=theme, css=css) as demo:
 
     demo.queue(api_open=False, concurrency_count=8)
 
-    @on(context_input.change)
-    def default_context(
-        oracle: oracle_state,
-        context: context_input,
-    ) -> {
-        context_input,
-        motive_input,
-    }:
-        context = oracle.meta('context', context)
-        motives = oracle.meta('motive', {}).get('examples', [])
-        motive = motives[context['value']]
-        return {
-            context_input: gr.update(**context),
-            motive_input: unlocked(value=motive),
-        }
+    @after(context_input.resume)
+    def default_contexts(oracle: oracle_state, context: context_input) -> context_input:
+        return gr.update(**oracle.defaults('context', context))
 
-    @on(model_input.change)
-    def default_model(
-        oracle: oracle_state,
-        model: model_input,
-    ) -> model_input:
-        return gr.update(**oracle.meta('model', model))
+    @after(model_input.resume)
+    def default_models(oracle: oracle_state, model: model_input) -> model_input:
+        return gr.update(**oracle.defaults('model', model))
+
+    @after(style_input.resume)
+    def default_styles(oracle: oracle_state, style: style_input) -> style_input:
+        return gr.update(**oracle.defaults('style', style))
+
+    @on(context_input.change)
+    def default_motive(oracle: oracle_state, context: context_input) -> motive_input:
+        return oracle.default_for('motive', context)
 
     @on(context_input.change)
     def change_placeholder(context: context_input) -> message_input:
@@ -106,8 +99,7 @@ with gr.Blocks(title='Oracle', theme=theme, css=css) as demo:
             preview.append((message, response or None))
         return preview
 
-    # HACK: Use context resume as a proxy for the chat log resume
-    on(context_input.change, refresh_chat)
+    after(raw_chat_log.resume, refresh_chat)
     on(debug_checkbox.change, refresh_chat)
 
     @on(send_button.click, queue=True)

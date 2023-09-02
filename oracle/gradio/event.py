@@ -21,6 +21,9 @@ def on(event, fn=None, queue=False, **kwargs):
         )
     return wrapper(fn) if fn else wrapper
 
+def after(event, *args, **kwargs):
+    return on(event.then, *args, **kwargs)
+
 def locked(**kwargs):
     return gr.update(**kwargs, interactive=False)
 
