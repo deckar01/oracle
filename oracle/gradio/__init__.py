@@ -10,10 +10,12 @@ read from its OpenAPI schema.
 import gradio as gr
 
 from .api import Oracle
-from .event import on, after, note, fold, show, hide, locked, unlocked
+from .event import on, after, show, hide, locked, unlocked
 from .session import persist
-from .theme import theme, css
+from .theme import theme, css, note, fold
 
+
+on.default['queue'] = False
 
 with gr.Blocks(title='Oracle', theme=theme, css=css) as demo:
     # Model

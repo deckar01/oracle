@@ -15,3 +15,17 @@ theme=gr.themes.Default(
 )
 
 css='oracle/gradio/theme.css'
+
+def note(status):
+    return f'<span class="status">{status}</span>'
+
+def fold(summary, details):
+    if isinstance(details, dict):
+        content = '\n\n'.join(
+            fold(name, detail)
+            for name, detail in details.items()
+        )
+    else:
+        details = details.replace('```', '\\`\\`\\`')
+        content = f'```\n{details}\n```'
+    return f'<details><summary>{summary}</summary>\n\n{content}\n\n</details>'
