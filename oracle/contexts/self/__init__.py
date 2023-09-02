@@ -1,3 +1,10 @@
+"""
+An example context that allows this project to chat about its
+own source code. The files are split into chunks, embedded
+into vectors using `BAAI/bge-base-en`, stored in a Chroma database,
+and indexed for searching.
+"""
+
 from ..bge_embedding import BGEEmbedding
 from ..chroma_index import ChromaIndex
 

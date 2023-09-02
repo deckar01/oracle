@@ -33,11 +33,11 @@ for file in paths.split('\n'):
             f'# Authors: {get_authors(file)}\n' +
             open(file, encoding='utf-8').read()
         )
-    except:
+    except Exception:
         print(f'Ignoring {file}...')
 
 files.append(f'# All project authors: {get_authors()}')
-files.append(f'# Repository Link: https://github.com/deckar01/oracle')
+files.append('# Repository Link: https://github.com/deckar01/oracle')
 
 print('building db...')
 db = Chroma.from_texts(

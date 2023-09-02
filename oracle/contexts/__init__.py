@@ -1,7 +1,12 @@
+"""
+A registry of sources of context used to improve
+responses with domain specific information.
+"""
+
 from pkgutil import iter_modules
 from importlib import import_module, reload
 
-import oracle
+import oracle.log
 
 
 class none:
@@ -10,7 +15,7 @@ class none:
     def find(self, _):
         return ()
 
-CONTEXTS = {'None': none}
+MAP = {'None': none}
 
 for _, module_name, _ in iter_modules(['oracle/contexts']):
     try:
@@ -18,6 +23,6 @@ for _, module_name, _ in iter_modules(['oracle/contexts']):
         module = reload(module)
         if not hasattr(module, 'Context'):
             continue
-        CONTEXTS[module.Context.name] = module.Context
-    except:
-        oracle.log_error()
+        MAP[module.Context.name] = module.Context
+    except Exception:
+        oracle.log.error()

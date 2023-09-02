@@ -1,4 +1,4 @@
-import oracle
+import oracle.device
 
 
 class BGEEmbedding:
@@ -7,6 +7,6 @@ class BGEEmbedding:
         from langchain.embeddings import HuggingFaceBgeEmbeddings
         self.embedding = HuggingFaceBgeEmbeddings(
             model_name='BAAI/bge-base-en',
-            model_kwargs={'device': oracle.get_device()},
+            model_kwargs={'device': oracle.device.get()},
             encode_kwargs={'normalize_embeddings': True}
         )

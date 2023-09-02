@@ -10,6 +10,14 @@ code {
     white-space: pre-wrap !important;
 }
 
+details > summary + p {
+    display: none;
+}
+
+details > details {
+    padding: var(--block-padding);
+}
+
 textarea {
     overflow: auto !important;
 }
@@ -78,7 +86,7 @@ footer {
     height: 100dvh;
 }
 
-#settings {
+#nomenu {
     display: none !important;
 }
 
