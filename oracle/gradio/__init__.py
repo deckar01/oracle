@@ -7,6 +7,8 @@ operations are streamed from the Flask API and form options are
 read from its OpenAPI schema.
 """
 
+import os
+
 import gradio as gr
 
 from .api import Oracle
@@ -15,6 +17,7 @@ from .session import persist
 from .theme import theme, css, note, fold
 
 
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 on.default['queue'] = False
 
 with gr.Blocks(title='Oracle', theme=theme, css=css) as demo:
